@@ -9,6 +9,40 @@ Unofficial CLI helpers and an optional Codex/agent skill for user-authorized Mai
 
 It does not provide login bypasses, QR login, browser-cookie extraction, CAPTCHA solving, anti-bot bypasses, or bulk scraping workflows.
 
+## 中文简介
+
+`maimai-cli` 是一个非官方的脉脉本机命令行工具，用来读取当前登录用户本来就能在网页端看到的内容，例如推荐流、热榜、同事圈、搜索结果、帖子详情、评论、图片和资料卡。
+
+这个仓库同时提供：
+
+- `maimai` CLI：发布在 PyPI 上的命令行工具。
+- `skill/`：给 Codex/Agent 使用的路由技能，帮助 Agent 在用户提到脉脉、同事圈、推荐流、评论、Cookie 等场景时正确调用 CLI。
+
+安全边界：
+
+- 不支持扫码登录。
+- 不自动读取浏览器 Cookie。
+- 不绕过登录、验证码、风控或权限控制。
+- 只适合低频、交互式地查看用户自己有权限访问的内容。
+- 不建议把完整 Cookie 发到聊天里，推荐在本机终端通过环境变量或标准输入导入。
+
+快速开始：
+
+```bash
+pip install maimai-cli
+maimai --help
+maimai import-cookie-header
+maimai status
+maimai feed --limit 10
+maimai company-feed --limit 10
+```
+
+安装 Agent skill：
+
+```bash
+cp -R skill ~/.agents/skills/maimai-cli
+```
+
 ## Safety Model
 
 - You must provide your own valid Cookie header from a browser session you control.
