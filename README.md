@@ -35,13 +35,13 @@ maimai --help
 This CLI does not read browser cookie stores automatically and does not support QR login. Import a Cookie header explicitly:
 
 ```bash
-maimai import-cookie-header --cookie 'u=...; access_token=...; session=...'
+maimai import-cookie-header --cookie '<paste your Cookie header here>'
 ```
 
 You can also use an environment variable or stdin:
 
 ```bash
-MAIMAI_COOKIE='u=...; access_token=...; session=...' maimai import-cookie-header
+MAIMAI_COOKIE='<paste your Cookie header here>' maimai import-cookie-header
 ```
 
 Check local authentication evidence:
