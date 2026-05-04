@@ -15,19 +15,25 @@ This project is intended for personal, low-volume access to content that the sig
 
 ## Install
 
+From PyPI:
+
+```bash
+pip install maimai-cli
+maimai --help
+```
+
+With `uvx`:
+
+```bash
+uvx maimai-cli --help
+```
+
 From source:
 
 ```bash
 git clone https://github.com/mariotong/maimai-cli.git
 cd maimai-cli
 uv run maimai --help
-```
-
-Or with pip once packaged:
-
-```bash
-pip install .
-maimai --help
 ```
 
 ## Authentication
@@ -116,6 +122,12 @@ Build the package:
 
 ```bash
 uv build
+```
+
+Publish to PyPI:
+
+```bash
+UV_PUBLISH_TOKEN='<your PyPI API token>' uv publish
 ```
 
 ## Project Status
