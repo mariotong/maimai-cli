@@ -1,17 +1,24 @@
 # maimai-cli
 
-Unofficial CLI helpers for user-authorized Maimai web sessions.
+Unofficial CLI helpers and an optional Codex/agent skill for user-authorized Maimai web sessions.
 
-This project is intended for personal, low-volume access to content that the signed-in user can already view in the browser. It does not provide login bypasses, CAPTCHA solving, anti-bot bypasses, or bulk scraping workflows.
+`maimai-cli` is designed for interactive, low-volume reading of Maimai content that the signed-in user can already view in the browser. The repository contains two pieces:
+
+- `maimai`, a local command-line tool published on PyPI.
+- `skill/`, a routing skill that teaches an agent when and how to use the CLI safely.
+
+It does not provide login bypasses, QR login, browser-cookie extraction, CAPTCHA solving, anti-bot bypasses, or bulk scraping workflows.
 
 ## Safety Model
 
 - You must provide your own valid Cookie header from a browser session you control.
+- The CLI does not read browser cookie stores automatically.
 - Cookies are stored locally under `~/.maimai-cli/cookies.json` with best-effort `0600` permissions.
 - The CLI only uses same-origin Maimai web endpoints and user-visible pages.
 - Do not use this project to access accounts, companies, feeds, posts, comments, or profiles that you are not authorized to view.
 - Respect Maimai's terms, privacy expectations, rate limits, and applicable law.
 - Keep request volume low. This tool is designed for interactive use, not continuous crawling.
+- If a Cookie header is exposed in chat, rotate it by logging out or refreshing the browser session.
 
 ## Install
 
@@ -36,9 +43,37 @@ cd maimai-cli
 uv run maimai --help
 ```
 
+## Agent Skill
+
+The repository includes a Codex/agent skill at `skill/`. Install it into your local skill root if you want agents to route Maimai-related requests to this CLI:
+
+```bash
+cp -R skill ~/.agents/skills/maimai-cli
+```
+
+The skill is intended to trigger when a user mentions Maimai, maimai, 职言, 同事圈, 推荐流, 热榜, 帖子详情, 评论, Cookie, or related troubleshooting.
+
+Skill references:
+
+| User intent | Reference |
+| --- | --- |
+| Authentication, Cookie import, safety boundaries | `skill/references/auth.md` |
+| Recommended feed, hot rank, company circle, pagination | `skill/references/feeds.md` |
+| Search content and contacts | `skill/references/search.md` |
+| Details, comments, images, profiles, short indexes | `skill/references/detail.md` |
+| Troubleshooting and common workflows | `skill/references/troubleshooting.md` |
+
+Agent usage principles from the skill:
+
+1. Verify `maimai --help` and `maimai status` before deeper workflows.
+2. Start list reads with small limits, for example `maimai feed --limit 5`.
+3. Treat `1`, `2`, and similar numeric values as short indexes only after checking recent list context.
+4. Summarize output by default; use `--json`, `--yaml`, or `--raw` only when needed.
+5. Never ask users to paste complete Cookie headers into chat.
+
 ## Authentication
 
-This CLI does not read browser cookie stores automatically and does not support QR login. Import a Cookie header explicitly:
+Import a Cookie header explicitly:
 
 ```bash
 maimai import-cookie-header --cookie '<paste your Cookie header here>'
@@ -54,6 +89,8 @@ Check local authentication evidence:
 
 ```bash
 maimai status
+maimai me
+maimai cookies
 ```
 
 Remove saved cookies:
@@ -62,13 +99,20 @@ Remove saved cookies:
 maimai logout
 ```
 
-## Usage
+## Common Commands
 
 Read a visible community feed:
 
 ```bash
 maimai feed --type recommended --limit 20
 maimai feed --type gossip --offset 20 --limit 20
+maimai feed --page 2 --page-size 10
+```
+
+Read hot rank:
+
+```bash
+maimai hot-rank --limit 20
 ```
 
 Read the current account's visible company circle feed:
@@ -83,31 +127,81 @@ Read a specific company circle if you already know its `webcid`:
 maimai company-feed <webcid> --limit 20
 ```
 
-After any listing command, entries are saved as short indexes. You can use those indexes for details, comments, images, and profiles:
-
-```bash
-maimai detail 1 --kind gossip
-maimai comments 1 --kind gossip --limit 20
-maimai images 1 --kind gossip
-```
-
-Search visible content:
+Search visible content and contacts:
 
 ```bash
 maimai search "keyword" --limit 5
+maimai search "keyword" --section gossips
+maimai search "keyword" --section contacts
 ```
 
-Use JSON output for scripts:
+After any listing command, entries are saved as short indexes. Use those indexes for details, comments, images, and profiles:
+
+```bash
+maimai refs
+maimai detail 1 --kind gossip
+maimai comments 1 --kind gossip --limit 20
+maimai images 1 --kind gossip
+maimai profile 1
+```
+
+Use structured output for scripts:
 
 ```bash
 maimai feed --type gossip --limit 5 --json
+maimai hot-rank --yaml
 ```
+
+Use `--raw` only when you explicitly need the full parsed response:
+
+```bash
+maimai company-feed --raw
+```
+
+## Short Indexes
+
+List commands save a local reference table at `~/.maimai-cli/refs.json`. Follow-up commands can use the latest list's 1-based indexes instead of copying raw IDs:
+
+```bash
+maimai feed --type gossip --limit 10
+maimai refs
+maimai detail 1 --kind gossip
+maimai comments 1 --kind gossip
+```
+
+If a short index points to the wrong item, run `maimai refs` to inspect the current cache. A later list command replaces the short-index context.
 
 ## Dynamic Action IDs
 
 Some Maimai web features use Next.js server action IDs. The CLI ships with known defaults and keeps a local runtime cache at `~/.maimai-cli/actions.json`. If an action fails, the client can scan currently visible pages for candidate action IDs, retry conservatively, and cache a working value.
 
 This mechanism is for compatibility with normal web-page changes. It is not intended to bypass access controls or anti-abuse systems.
+
+## Troubleshooting
+
+Check auth first:
+
+```bash
+maimai status
+maimai cookies
+maimai me
+```
+
+If auth looks stale:
+
+```bash
+maimai logout
+MAIMAI_COOKIE='<paste your new Cookie header here>' maimai import-cookie-header
+maimai status
+```
+
+If list follow-up commands fail:
+
+```bash
+maimai refs
+```
+
+If search pagination appears unchanged, note that the current Maimai web search endpoint may ignore offset/page parameters.
 
 ## Development
 
