@@ -1,14 +1,18 @@
 ---
 name: maimai-cli
-description: 脉脉 CLI 路由技能。用于导入登录态、查看推荐流/热榜/公司圈、搜索内容、读取详情评论、下载图片和排查登录问题；当用户提到脉脉、maimai、职言、同事圈、推荐流、热榜、帖子详情、评论、Cookie 时触发。
-homepage: https://pypi.org/project/maimai-cli/
+description: >
+  脉脉 CLI 路由技能。用于导入登录态、查看推荐流/热榜/公司圈、搜索内容、
+  读取详情评论、下载图片和排查登录问题。Use when: maimai, 脉脉, 职言,
+  同事圈, 推荐流, 热榜, 帖子详情, 评论, Cookie.
+version: 1.1.0
+license: MIT-0
 metadata:
-  version: 1.1.0
-  agent:
-    type: tool
-    parent_context_access: read-only
-  hermes:
-    tags: [maimai, social-media, career, cli]
+  openclaw:
+    requires:
+      bins:
+        - maimai
+    homepage: https://github.com/mariotong/maimai-cli
+    emoji: "💬"
 ---
 
 # maimai-cli
