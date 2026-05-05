@@ -217,7 +217,15 @@ maimai comments 1 --kind gossip
 
 If a short index points to the wrong item, run `maimai refs` to inspect the current cache. A later list command replaces the short-index context.
 
-Short indexes are not raw post IDs. They only refer to the latest local list cache. Running another list command, including `comments`, can replace that cache. If you use a raw gossip ID directly, pass its `--egid`; if you use a raw feed ID directly, pass its `--efid`:
+Comments use a separate cache at `~/.maimai-cli/comment_refs.json`, so reading comments no longer replaces the post indexes from `feed`, `hot-rank`, `company-feed`, or `search`. Inspect comment indexes explicitly when needed:
+
+```bash
+maimai comments 1 --kind gossip
+maimai refs --scope comments
+maimai comments 1 --kind gossip --cid 1
+```
+
+Short indexes are not raw post IDs. They only refer to the latest local list cache. Running another post list command can replace that cache. If you use a raw gossip ID directly, pass its `--egid`; if you use a raw feed ID directly, pass its `--efid`:
 
 ```bash
 maimai detail 36744330 --kind gossip --egid <egid>

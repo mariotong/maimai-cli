@@ -52,13 +52,21 @@ def images(
 
     if kind == "feed" and not efid:
         emit_exception(
-            MaimaiCliError(INVALID_ARGUMENT, "--efid is required for feed images"),
+            MaimaiCliError(
+                INVALID_ARGUMENT,
+                "--efid is required for feed images. If you are using a raw feed id, pass its `--efid`; "
+                "if you are using a short index, rerun the list command that produced the post and confirm it with `maimai refs`.",
+            ),
             as_json=as_json, as_yaml=as_yaml,
         )
         raise SystemExit(1)
     if kind == "gossip" and not egid:
         emit_exception(
-            MaimaiCliError(INVALID_ARGUMENT, "--egid is required for gossip images"),
+            MaimaiCliError(
+                INVALID_ARGUMENT,
+                "--egid is required for gossip images. If you are using a raw gossip id, pass its `--egid`; "
+                "if you are using a short index, rerun the list command that produced the post and confirm it with `maimai refs`.",
+            ),
             as_json=as_json, as_yaml=as_yaml,
         )
         raise SystemExit(1)

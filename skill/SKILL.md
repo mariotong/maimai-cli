@@ -65,12 +65,13 @@ maimai detail 1 --kind gossip
 maimai comments 1 --kind gossip
 maimai images 1 --download ./images
 maimai profile 1
+maimai refs --scope comments
 ```
 
 ## 使用原则
 
 1. 先验证 `maimai` 命令存在，再确认 `maimai status` 是否正常。
 2. 列表读取优先从小结果集开始，例如 `feed --limit 5`。
-3. 遇到 `1`、`2` 这类短索引时，先确认最近一次列表上下文是否还在。
+3. 遇到 `1`、`2` 这类短索引时，先确认最近一次列表上下文是否还在；帖子看 `maimai refs`，评论看 `maimai refs --scope comments`。
 4. 默认给用户摘要，不直接倾倒整屏原始输出；需要脚本消费时再加 `--json` 或 `--yaml`。
 5. 如果用户把完整 Cookie 贴进对话，先提醒其让旧登录态失效，再继续其他操作。

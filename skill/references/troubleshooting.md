@@ -34,7 +34,7 @@ maimai status
 常见原因：
 - 当前会话里没有先运行列表命令
 - 后续运行了新的列表命令，短索引缓存已切换
-- 运行 `comments` 后短索引缓存被评论列表覆盖，原帖子索引不再可用
+- 帖子短索引和评论短索引用了不同 scope，但查看时选错了 `refs` scope
 - `feed` 和 `gossip` 类型判断错误
 - 把 raw gossip id 当成短索引用，但没有传 `--egid`
 
@@ -42,6 +42,7 @@ maimai status
 
 ```bash
 maimai refs
+maimai refs --scope comments
 ```
 
 处理建议：
@@ -57,16 +58,15 @@ maimai refs
 maimai detail 11 --kind gossip
 maimai comments 11 --kind gossip
 
+# 正确：评论短索引有独立缓存，不会覆盖帖子短索引
+maimai refs --scope comments
+
 # 正确：用 raw gossip id 时补 egid
 maimai detail 36744330 --kind gossip --egid <egid>
 maimai comments 36744330 --kind gossip --egid <egid>
-
-# 不稳：评论列表刷新了 refs 后，再用原短索引查帖子
-maimai comments 11 --kind gossip
-maimai detail 11 --kind gossip
 ```
 
-如果已经丢失 `egid`，最稳妥做法是重新运行产生该帖子的列表命令，然后用短索引展开。
+如果已经丢失 `egid`，最稳妥做法是重新运行产生该帖子的列表命令，然后用短索引展开。`comments` 命令的评论索引现在写入独立 scope，不会覆盖帖子列表索引。
 
 ## 搜索翻页异常
 

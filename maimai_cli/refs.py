@@ -21,11 +21,20 @@ from typing import Any
 from .config import ensure_config_dir
 
 INDEX_FILE = Path.home() / ".maimai-cli" / "refs.json"
+COMMENT_INDEX_FILE = Path.home() / ".maimai-cli" / "comment_refs.json"
 CONTEXT_FILE = Path.home() / ".maimai-cli" / "context.json"
 
 _INDEX_TTL_SECONDS = 24 * 3600
 _CONTEXT_TTL_SECONDS = 7 * 24 * 3600
 _CONTEXT_MAX_ENTRIES = 500
+_INDEX_FILES = {
+    "default": INDEX_FILE,
+    "comments": COMMENT_INDEX_FILE,
+}
+
+
+def _index_file(scope: str = "default") -> Path:
+    return _INDEX_FILES.get(scope, INDEX_FILE)
 
 
 def _write_json(path: Path, payload: Any) -> None:
@@ -64,7 +73,7 @@ def _normalize_entry(entry: dict) -> dict[str, Any] | None:
     return out
 
 
-def save_index(entries: list[dict], *, source_command: str) -> list[dict]:
+def save_index(entries: list[dict], *, source_command: str, scope: str = "default") -> list[dict]:
     """Persist the ordered list produced by a listing command."""
     normalized = [e for e in (_normalize_entry(item) for item in entries) if e]
     payload = {
@@ -72,7 +81,7 @@ def save_index(entries: list[dict], *, source_command: str) -> list[dict]:
         "source_command": source_command,
         "entries": normalized,
     }
-    _write_json(INDEX_FILE, payload)
+    _write_json(_index_file(scope), payload)
     # Mirror each entry into the context cache keyed by (kind,id) so that
     # lookups by raw id also benefit.
     for entry in normalized:
@@ -80,8 +89,8 @@ def save_index(entries: list[dict], *, source_command: str) -> list[dict]:
     return normalized
 
 
-def load_index() -> dict[str, Any]:
-    data = _read_json(INDEX_FILE)
+def load_index(scope: str = "default") -> dict[str, Any]:
+    data = _read_json(_index_file(scope))
     if not isinstance(data, dict):
         return {"entries": [], "saved_at": 0, "source_command": ""}
     entries = data.get("entries") or []
@@ -94,10 +103,10 @@ def load_index() -> dict[str, Any]:
     }
 
 
-def get_by_short_index(short_index: int) -> dict[str, Any] | None:
+def get_by_short_index(short_index: int, *, scope: str = "default") -> dict[str, Any] | None:
     if short_index <= 0:
         return None
-    index = load_index()
+    index = load_index(scope)
     if time.time() - index["saved_at"] > _INDEX_TTL_SECONDS:
         return None
     entries = index["entries"]
@@ -106,7 +115,7 @@ def get_by_short_index(short_index: int) -> dict[str, Any] | None:
     return entries[short_index - 1]
 
 
-def resolve_reference(token: str, *, expect_kind: str | None = None) -> dict[str, Any]:
+def resolve_reference(token: str, *, expect_kind: str | None = None, scope: str = "default") -> dict[str, Any]:
     """Resolve a user-supplied token.
 
     - Pure digits → try to look it up in the short-index cache first.
@@ -118,13 +127,15 @@ def resolve_reference(token: str, *, expect_kind: str | None = None) -> dict[str
         return {}
 
     if token.isdigit():
-        entry = get_by_short_index(int(token))
+        entry = get_by_short_index(int(token), scope=scope)
         if entry is not None:
             if expect_kind and entry.get("kind") != expect_kind:
-                # When the user disagrees with the cached kind, fall back to
-                # treating the digits as a raw id.
-                return {"id": token}
-            return dict(entry)
+                # When the user disagrees with the cached kind, fall through
+                # and treat the digits as a raw id, while still allowing the
+                # raw-id context cache to supply egid / efid below.
+                pass
+            else:
+                return dict(entry)
 
     cached = get_context(expect_kind or "", token) if expect_kind else {}
     if cached:
@@ -189,6 +200,6 @@ def get_context(kind: str, item_id: str) -> dict[str, Any]:
 
 
 def clear_all() -> None:
-    for path in (INDEX_FILE, CONTEXT_FILE):
+    for path in (INDEX_FILE, COMMENT_INDEX_FILE, CONTEXT_FILE):
         if path.exists():
             path.unlink()

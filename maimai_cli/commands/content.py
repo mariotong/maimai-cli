@@ -104,6 +104,19 @@ def _resolve_feed_ref(
     return resolved_id, efid, egid
 
 
+def _missing_context_message(kind: str, field: str, command_name: str) -> str:
+    listing = "maimai feed / maimai hot-rank / maimai company-feed / maimai search"
+    raw_hint = (
+        f"If you are using a raw {kind} id, pass its `{field}`. "
+        f"If you are using a short index, rerun the list command that produced the post, "
+        f"then confirm it with `maimai refs`."
+    )
+    return (
+        f"{field} is required for {kind} {command_name}. {raw_hint} "
+        f"List commands that can create short-index context: {listing}."
+    )
+
+
 # ─── Commands ──────────────────────────────────────────────────────────────
 
 
@@ -380,13 +393,13 @@ def detail(
 
     if kind == "feed" and not efid:
         emit_exception(
-            MaimaiCliError(INVALID_ARGUMENT, "--efid is required for feed detail"),
+            MaimaiCliError(INVALID_ARGUMENT, _missing_context_message("feed", "--efid", "detail")),
             as_json=as_json, as_yaml=as_yaml,
         )
         raise SystemExit(1)
     if kind == "gossip" and not egid:
         emit_exception(
-            MaimaiCliError(INVALID_ARGUMENT, "--egid is required for gossip detail"),
+            MaimaiCliError(INVALID_ARGUMENT, _missing_context_message("gossip", "--egid", "detail")),
             as_json=as_json, as_yaml=as_yaml,
         )
         raise SystemExit(1)
@@ -435,16 +448,20 @@ def comments(
     except MaimaiCliError as exc:
         emit_exception(exc, as_json=as_json, as_yaml=as_yaml)
         raise SystemExit(1) from exc
+    resolved_cid = ""
+    if cid:
+        comment_ref = refs.resolve_reference(cid, expect_kind="comment", scope="comments")
+        resolved_cid = str(comment_ref.get("id") or cid)
 
     def action(client):
-        return client.comments(kind=kind, item_id=resolved_id, page=page, efid=efid, egid=egid, cid=cid)
+        return client.comments(kind=kind, item_id=resolved_id, page=page, efid=efid, egid=egid, cid=resolved_cid)
 
     def on_success(data):
         summarized = summarize_comments(data, limit)
         entries = [
             e for e in (_ref_from_comment(c) for c in summarized.get("items", [])) if e
         ]
-        refs.save_index(entries, source_command=f"comments {resolved_id} --kind {kind}")
+        refs.save_index(entries, source_command=f"comments {resolved_id} --kind {kind}", scope="comments")
 
         hints: dict[str, Any] = {"has_more": bool(summarized.get("has_more"))}
         if summarized.get("has_more"):
@@ -455,8 +472,8 @@ def comments(
                 extra_parts.append(f"--efid {efid}")
             if kind == "gossip" and egid:
                 extra_parts.append(f"--egid {egid}")
-            if cid:
-                extra_parts.append(f"--cid {cid}")
+            if resolved_cid:
+                extra_parts.append(f"--cid {resolved_cid}")
             extra = f" {' '.join(extra_parts)}" if extra_parts else ""
             hints["next_command"] = (
                 f"maimai comments {resolved_id} --kind {kind} --page {next_page} --limit {limit}{extra}"
@@ -466,8 +483,10 @@ def comments(
             data if raw else summarized,
             kind=kind,
             id=resolved_id,
+            cid=resolved_cid or None,
+            cid_resolved_from_short_index=bool(cid and cid.isdigit() and cid != resolved_cid),
             page=page,
-            short_index_count=len(entries),
+            comment_short_index_count=len(entries),
             **hints,
             as_json=as_json,
             as_yaml=as_yaml,
@@ -519,14 +538,17 @@ def profile(
 
 @click.command("refs")
 @click.option("--limit", default=20, show_default=True, help="Max entries to show.")
+@click.option("--scope", type=click.Choice(["posts", "comments"]), default="posts", show_default=True, help="Which short-index cache to inspect.")
 @structured_output_options
-def refs_cmd(limit: int, as_json: bool, as_yaml: bool) -> None:
+def refs_cmd(limit: int, scope: str, as_json: bool, as_yaml: bool) -> None:
     """Show the short-index reference cache from the last listing command."""
-    index = refs.load_index()
+    ref_scope = "comments" if scope == "comments" else "default"
+    index = refs.load_index(ref_scope)
     entries = index["entries"][:limit]
     indexed = [{"index": i + 1, **entry} for i, entry in enumerate(entries)]
     emit_ok(
         indexed,
+        scope=scope,
         source_command=index["source_command"],
         saved_at=index["saved_at"],
         total=len(index["entries"]),
