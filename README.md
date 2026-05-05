@@ -161,6 +161,18 @@ Read a specific company circle if you already know its `webcid`:
 maimai company-feed <webcid> --limit 20
 ```
 
+If automatic company-circle discovery fails with an HTTP 406/404 or an empty result, open the company circle in the browser and copy the `webcid` from the URL:
+
+```text
+https://maimai.cn/company/gossip_discuss?webcid=<webcid>
+```
+
+Then pass it explicitly:
+
+```bash
+maimai company-feed <webcid> --limit 20
+```
+
 Search visible content and contacts:
 
 ```bash
@@ -236,6 +248,12 @@ maimai refs
 ```
 
 If search pagination appears unchanged, note that the current Maimai web search endpoint may ignore offset/page parameters.
+
+If `maimai company-feed` fails during automatic company-circle discovery, pass the browser URL's `webcid` explicitly:
+
+```bash
+maimai company-feed <webcid> --limit 20
+```
 
 ## Development
 

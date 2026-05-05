@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from maimai_cli.client import webcid_from_html
+from maimai_cli.client import webcid_from_html, webcids_from_html
 from maimai_cli.protocol import discover_action_ids
 
 
@@ -14,6 +14,13 @@ class ProtocolTests(unittest.TestCase):
     def test_webcid_from_html_supports_deep_link(self) -> None:
         html = 'taoumaimai://rct?component=GossipCircle\\u0026webcid=abc_123'
         self.assertEqual(webcid_from_html(html), "abc_123")
+
+    def test_webcids_from_html_prefers_gossip_circle_links(self) -> None:
+        html = (
+            'href="/x?webcid=incidental" '
+            'taoumaimai://rct?component=GossipCircle\\u0026webcid=company_123'
+        )
+        self.assertEqual(webcids_from_html(html)[0], "company_123")
 
 
 if __name__ == "__main__":

@@ -222,23 +222,43 @@ class MaimaiClient:
             raise MaimaiError("Could not find hot rank list.")
         return {"list": items, "has_more": '"hasMoreDefault":true' in flight}
 
-    def resolve_company_webcid(self) -> str:
-        """Resolve the current user's default company gossip circle id."""
-        webcid = ""
-        for path in ("/company/gossip_discuss", "/community/home/gossip", "/community/home/recommended", "/"):
+    def resolve_company_webcids(self) -> list[str]:
+        """Resolve candidate company gossip circle ids visible to the user."""
+        webcids: list[str] = []
+        for path in ("/community/home/gossip", "/community/home/recommended", "/", "/company/gossip_discuss"):
             try:
                 resp = self._community_page_response(path)
             except MaimaiError:
                 continue
-            webcid = webcid_from_url(str(resp.url)) or webcid_from_html(resp.text)
-            if webcid:
-                break
-        if not webcid:
+            for webcid in [webcid_from_url(str(resp.url)), *webcids_from_html(resp.text)]:
+                if webcid and webcid not in webcids:
+                    webcids.append(webcid)
+        if not webcids:
             raise MaimaiError("Could not resolve company webcid from visible community pages.")
-        return webcid
+        return webcids
+
+    def resolve_company_webcid(self) -> str:
+        """Resolve the current user's default company gossip circle id."""
+        return self.resolve_company_webcids()[0]
 
     def company_feed(self, webcid: str = "", *, limit: int = 10, offset: int = 0) -> dict[str, Any]:
-        webcid = webcid or self.resolve_company_webcid()
+        if webcid:
+            return self._company_feed_by_webcid(webcid, limit=limit, offset=offset)
+        last_error: MaimaiError | None = None
+        for candidate in self.resolve_company_webcids():
+            try:
+                return self._company_feed_by_webcid(candidate, limit=limit, offset=offset)
+            except MaimaiError as exc:
+                last_error = exc
+                continue
+        detail = f" Last error: {last_error}" if last_error else ""
+        raise MaimaiError(
+            "Could not load company feed from auto-discovered webcid candidates."
+            " Try `maimai company-feed <webcid>` with the webcid from the browser URL."
+            f"{detail}"
+        )
+
+    def _company_feed_by_webcid(self, webcid: str, *, limit: int = 10, offset: int = 0) -> dict[str, Any]:
         html = self.community_page(f"/company/gossip_discuss?{urlencode({'webcid': webcid})}")
         share_data = share_data_from_html(html)
         payload = share_data.get("data")
@@ -546,18 +566,32 @@ def webcid_from_url(url: str) -> str:
 
 
 def webcid_from_html(html: str) -> str:
+    webcids = webcids_from_html(html)
+    return webcids[0] if webcids else ""
+
+
+def webcids_from_html(html: str) -> list[str]:
+    webcids: list[str] = []
+
+    def add(value: str) -> None:
+        if value and value not in webcids:
+            webcids.append(value)
+
+    # Prefer explicit company-circle deep links over incidental webcid mentions.
+    for match in re.finditer(r"GossipCircle.{0,240}?webcid=([A-Za-z0-9_-]+)", html, re.DOTALL):
+        add(match.group(1))
+
     try:
         share_data = share_data_from_html(html)
     except MaimaiError:
         share_data = {}
     for value in walk_json_values(share_data):
-        if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_-]{6,64}", value):
-            if value.startswith("webcid="):
-                return value.split("=", 1)[1]
-        if isinstance(value, str) and "webcid=" in value:
+        if isinstance(value, str) and value.startswith("webcid="):
+            add(value.split("=", 1)[1])
+        elif isinstance(value, str) and "webcid=" in value:
             found = webcid_from_url(value)
             if found:
-                return found
+                add(found)
 
     for pattern in (
         r"[?&]webcid=([A-Za-z0-9_-]+)",
@@ -565,10 +599,9 @@ def webcid_from_html(html: str) -> str:
         r'"webcid"\s*:\s*"([A-Za-z0-9_-]+)"',
         r"'webcid'\s*:\s*'([A-Za-z0-9_-]+)'",
     ):
-        match = re.search(pattern, html)
-        if match:
-            return match.group(1)
-    return ""
+        for match in re.finditer(pattern, html):
+            add(match.group(1))
+    return webcids
 
 
 def walk_json_values(value: Any):

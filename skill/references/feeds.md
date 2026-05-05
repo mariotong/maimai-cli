@@ -48,6 +48,18 @@ maimai company-feed --limit 20
 - “看当前公司圈”
 - “看某个公司 gossip-discuss 圈子”
 
+如果自动解析当前公司圈失败，尤其是出现 HTTP 406/404，让用户打开浏览器里的公司圈页面，从 URL 复制 `webcid`：
+
+```text
+https://maimai.cn/company/gossip_discuss?webcid=<webcid>
+```
+
+然后显式传入：
+
+```bash
+maimai company-feed <webcid> --limit 20
+```
+
 ## 结构化输出
 
 ```bash

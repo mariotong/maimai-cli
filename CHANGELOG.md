@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 - 2026-05-05
+
+- Improve automatic company-circle `webcid` discovery by collecting multiple candidates from visible community pages.
+- Prefer `GossipCircle` deep links when resolving the current company circle.
+- Retry company feed loading across discovered `webcid` candidates before failing.
+- Document the fallback workflow for HTTP 406/404: pass `maimai company-feed <webcid>` explicitly from the browser URL.
+
 ## 0.3.1 - 2026-05-04
 
 - Initial public alpha release.

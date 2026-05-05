@@ -59,6 +59,29 @@ maimai refs
 - 对异常项先记录，不要贸然假设是数据缺失
 - 需要时加 `--json` 或 `--raw` 查看完整结构
 
+## 公司圈自动解析失败
+
+症状：
+- `maimai company-feed` 返回 HTTP 406/404
+- 自动解析不到当前同事圈
+- 显式传 `webcid` 后可以正常访问
+
+原因：
+- 脉脉页面结构变化，自动解析逻辑没有匹配到新的公司圈入口
+- 当前账号首页没有暴露可解析的 `GossipCircle` 深链
+
+处理建议：
+
+```bash
+maimai company-feed <webcid> --limit 20
+```
+
+`webcid` 可以从浏览器公司圈 URL 中复制：
+
+```text
+https://maimai.cn/company/gossip_discuss?webcid=<webcid>
+```
+
 ## 原始 GET 调试
 
 ```bash
