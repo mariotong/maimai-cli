@@ -217,6 +217,13 @@ maimai comments 1 --kind gossip
 
 If a short index points to the wrong item, run `maimai refs` to inspect the current cache. A later list command replaces the short-index context.
 
+Short indexes are not raw post IDs. They only refer to the latest local list cache. Running another list command, including `comments`, can replace that cache. If you use a raw gossip ID directly, pass its `--egid`; if you use a raw feed ID directly, pass its `--efid`:
+
+```bash
+maimai detail 36744330 --kind gossip --egid <egid>
+maimai comments 36744330 --kind gossip --egid <egid>
+```
+
 ## Dynamic Action IDs
 
 Some Maimai web features use Next.js server action IDs. The CLI ships with known defaults and keeps a local runtime cache at `~/.maimai-cli/actions.json`. If an action fails, the client can scan currently visible pages for candidate action IDs, retry conservatively, and cache a working value.

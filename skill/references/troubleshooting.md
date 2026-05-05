@@ -34,7 +34,9 @@ maimai status
 常见原因：
 - 当前会话里没有先运行列表命令
 - 后续运行了新的列表命令，短索引缓存已切换
+- 运行 `comments` 后短索引缓存被评论列表覆盖，原帖子索引不再可用
 - `feed` 和 `gossip` 类型判断错误
+- 把 raw gossip id 当成短索引用，但没有传 `--egid`
 
 排查命令：
 
@@ -46,6 +48,25 @@ maimai refs
 - 先重新跑一次列表命令
 - 再用 `refs` 确认 `1` 对应的对象
 - 必要时显式传 `efid` 或 `egid`
+
+示例：
+
+```bash
+# 正确：刚跑完热榜/公司圈列表，11 是短索引
+maimai refs
+maimai detail 11 --kind gossip
+maimai comments 11 --kind gossip
+
+# 正确：用 raw gossip id 时补 egid
+maimai detail 36744330 --kind gossip --egid <egid>
+maimai comments 36744330 --kind gossip --egid <egid>
+
+# 不稳：评论列表刷新了 refs 后，再用原短索引查帖子
+maimai comments 11 --kind gossip
+maimai detail 11 --kind gossip
+```
+
+如果已经丢失 `egid`，最稳妥做法是重新运行产生该帖子的列表命令，然后用短索引展开。
 
 ## 搜索翻页异常
 

@@ -10,6 +10,13 @@
 maimai refs
 ```
 
+重要注意：
+- 短索引只对“最近一次列表命令”的缓存可靠，例如刚跑完 `hot-rank`、`feed`、`company-feed` 或 `search` 后的 `1`、`2`。
+- 运行 `comments` 后，短索引缓存会变成评论列表；这时再用 `detail 1` 可能已经不是原来的帖子。
+- 如果用户给的是 raw gossip id，例如 `36744330`，通常还需要 `--egid`；raw feed id 通常还需要 `--efid`。
+- 不要把“热榜第 11 条”的短索引和“帖子真实 ID”混用。先用 `maimai refs` 确认当前 `1/11/18` 指向谁。
+- 当命令提示需要 `egid` 或 `efid` 时，优先重新拉原列表恢复短索引；若已知道真实 ID，则必须显式补 `--egid` / `--efid`。
+
 ## 查看详情
 
 ```bash
@@ -17,6 +24,7 @@ maimai detail 1 --kind gossip
 maimai detail 10 --kind feed
 maimai detail 1 --kind feed --efid E880GEffW92s1hDji5EuDQ
 maimai detail 1 --kind gossip --egid 31fcf8e65f2f42ab8dc8facc472e89c2
+maimai detail 36744330 --kind gossip --egid 31fcf8e65f2f42ab8dc8facc472e89c2
 ```
 
 适用场景：
@@ -31,6 +39,7 @@ maimai comments 1 --kind gossip
 maimai comments 10 --kind feed
 maimai comments 1 --kind gossip --page 1 --limit 20
 maimai comments 1 --kind feed --cid COMMENT_ID
+maimai comments 36744330 --kind gossip --egid 31fcf8e65f2f42ab8dc8facc472e89c2
 ```
 
 适用场景：
