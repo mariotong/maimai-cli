@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3 - 2026-05-05
+
+- Keep post short indexes and comment short indexes in separate local caches.
+- Add `maimai refs --scope comments` for inspecting comment references.
+- Allow `--cid` to resolve comment short indexes when reading replies.
+- Improve missing `--egid` / `--efid` guidance for raw IDs versus short indexes.
+- Add regression tests for reference scopes and cached raw-ID context.
+
 ## 0.3.2 - 2026-05-05
 
 - Improve automatic company-circle `webcid` discovery by collecting multiple candidates from visible community pages.

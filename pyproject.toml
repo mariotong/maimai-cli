@@ -1,6 +1,6 @@
 [project]
 name = "maimai-cli"
-version = "0.3.2"
+version = "0.3.3"
 description = "CLI helpers for user-authorized Maimai web sessions"
 requires-python = ">=3.10"
 readme = "README.md"
